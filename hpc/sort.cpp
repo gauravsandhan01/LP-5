@@ -29,15 +29,15 @@ void parallelBubbleSort(vector<int>& arr) {
 
 // Merge two halves
 void merge(vector<int>& arr, int left, int mid, int right) {
-    vector<int> temp(right - left + 1);
-    int i = left, j = mid + 1, k = 0;
+    vector<int> temp;
+    int i = left, j = mid + 1;
     while (i <= mid && j <= right)
-        temp[k++] = arr[i] <= arr[j] ? arr[i++] : arr[j++];
-    while (i <= mid) temp[k++] = arr[i++];
-    while (j <= right) temp[k++] = arr[j++];
-    for (i = left, k = 0; i <= right; i++, k++)
-        arr[i] = temp[k];
+        temp.push_back(arr[i] <= arr[j] ? arr[i++] : arr[j++]);
+    while (i <= mid) temp.push_back(arr[i++]);
+    while (j <= right) temp.push_back(arr[j++]);
+    copy(temp.begin(), temp.end(), arr.begin() + left);
 }
+
 
 // Sequential Merge Sort
 void mergeSort(vector<int>& arr, int left, int right) {
@@ -69,24 +69,17 @@ void parallelMergeSort(vector<int>& arr, int left, int right, int depth = 0) {
     merge(arr, left, mid, right);
 }
 
-// Print first 10 elements of an array
-void printArray(const vector<int>& arr) {
-    int n = arr.size();
-    for (int i = 0; i < min(n, 10); i++)
-        cout << arr[i] << " ";
-    cout << (n > 10 ? "... (only first 10 shown)" : "") << endl;
-}
 
 int main() {
     int n;
     cout << "Enter number of elements: ";
     cin >> n;
-
+    
     vector<int> data(n);
-    srand(time(0));
+    cout << "Enter " << n << " elements:\n";
     for (int i = 0; i < n; i++)
-        data[i] = rand() % 10000;
-
+        cin >> data[i];
+    
     // Copies for testing
     vector<int> bubbleSeq = data;
     vector<int> bubblePar = data;
@@ -100,28 +93,27 @@ int main() {
     bubbleSort(bubbleSeq);
     end = omp_get_wtime();
     cout << "\nSequential Bubble Sort Time: " << end - start << " seconds\n";
-    printArray(bubbleSeq);
-
+   
     // Parallel Bubble Sort
     start = omp_get_wtime();
     parallelBubbleSort(bubblePar);
     end = omp_get_wtime();
     cout << "Parallel Bubble Sort Time: " << end - start << " seconds\n";
-    printArray(bubblePar);
+   
 
     // Sequential Merge Sort
     start = omp_get_wtime();
     mergeSort(mergeSeq, 0, n - 1);
     end = omp_get_wtime();
     cout << "\nSequential Merge Sort Time: " << end - start << " seconds\n";
-    printArray(mergeSeq);
+   
 
     // Parallel Merge Sort
     start = omp_get_wtime(); 
     parallelMergeSort(mergePar, 0, n - 1);
     end = omp_get_wtime();
     cout << "Parallel Merge Sort Time: " << end - start << " seconds\n";
-    printArray(mergePar);
+    
 
     return 0;
 }
