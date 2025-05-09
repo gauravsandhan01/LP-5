@@ -1,32 +1,35 @@
 #include <iostream>
 #include <vector>
 #include <queue>
+#include <stack>
 #include <omp.h>
 using namespace std;
 
-// Parallel BFS
 void parallel_bfs(const vector<vector<int>>& graph, int start) {
     int n = graph.size();
     vector<bool> visited(n, false);
     queue<int> q;
-
     visited[start] = true;
     q.push(start);
 
     while (!q.empty()) {
-        int node = q.front();
-        q.pop();
+        int node;
+        #pragma omp critical
+        {
+            node = q.front();
+            q.pop();
+        }
         cout << "BFS visiting: " << node << endl;
 
         #pragma omp parallel for
         for (int i = 0; i < graph[node].size(); i++) {
-            int adj = graph[node][i];
-            if (!visited[adj]) {
+            int neighbor = graph[node][i];
+            if (!visited[neighbor]) {
                 #pragma omp critical
                 {
-                    if (!visited[adj]) {
-                        visited[adj] = true;
-                        q.push(adj);
+                    if (!visited[neighbor]) {
+                        visited[neighbor] = true;
+                        q.push(neighbor);
                     }
                 }
             }
@@ -34,20 +37,34 @@ void parallel_bfs(const vector<vector<int>>& graph, int start) {
     }
 }
 
-void dfs_helper(const vector<vector<int>>& graph, vector<bool>& visited, int node) {
-    visited[node] = true;
-    cout << "DFS visiting: " << node << endl;
+void parallel_dfs(const vector<vector<int>>& graph, int start) {
+    int n = graph.size();
+    vector<bool> visited(n, false);
+    stack<int> stk;
+    stk.push(start);
 
-    for (int adj : graph[node]) {
-        if (!visited[adj]) {
-            dfs_helper(graph, visited, adj);
+    while (!stk.empty()) {
+        int node;
+        #pragma omp critical
+        {
+            node = stk.top();
+            stk.pop();
+        }
+
+        if (!visited[node]) {
+            visited[node] = true;
+            cout << "DFS visiting: " << node << endl;
+
+            #pragma omp parallel for
+            for (int i = 0; i < graph[node].size(); i++) {
+                int neighbor = graph[node][i];
+                if (!visited[neighbor]) {
+                    #pragma omp critical
+                    stk.push(neighbor);
+                }
+            }
         }
     }
-}
-
-void parallel_dfs(const vector<vector<int>>& graph, int start) {
-    vector<bool> visited(graph.size(), false);
-    dfs_helper(graph, visited, start);
 }
 
 int main() {
@@ -56,13 +73,12 @@ int main() {
     cin >> nodes >> edges;
 
     vector<vector<int>> graph(nodes);
-
-    cout << "Enter " << edges << " edges (u v):\n";
-    for (int i = 0; i < edges; ++i) {
+    cout << "Enter edges (u v):\n";
+    for (int i = 0; i < edges; i++) {
         int u, v;
         cin >> u >> v;
         graph[u].push_back(v);
-        graph[v].push_back(u); // For undirected graph
+        graph[v].push_back(u); // undirected
     }
 
     int start;

@@ -1,0 +1,38 @@
+Binari Clasifaction
+
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+
+df = pd.read_csv("C:/Users/gaura/Desktop/DL/IMDB Dataset.csv",on_bad_lines='skip',encoding='utf-8')
+df['sentiment'] = df['sentiment'].map({'positive': 1, 'negative': 0})
+
+
+X_train, X_test, y_train, y_test = train_test_split(df['review'], df['sentiment'], test_size=0.2)
+vectorizer = TfidfVectorizer(max_features=5000)
+
+X_train = vectorizer.fit_transform(X_train)  # Sparse matrix
+X_test = vectorizer.transform(X_test)  # Sparse matrix
+
+
+model = Sequential([
+    Dense(64, activation='relu', input_shape=(X_train.shape[1],)),
+    Dense(1, activation='sigmoid')
+])
+
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+model.fit(X_train, y_train, epochs=2, validation_split=0.2)
+loss, accuracy = model.evaluate(X_test, y_test)
+ # Directly get accuracy from evaluation
+print(f"Test Accuracy: {accuracy:.4f}")
+
+custom_reviews = ["I loved the movie!", "It was boring and terrible.", "It was time wasting", "Amazing"]
+predictions = model.predict(vectorizer.transform(custom_reviews))
+
+for r, p in zip(custom_reviews, predictions):
+    sentiment = "Positive" if p > 0.5 else "Negative"  # Using 'p' as prediction
+    print(f'Review: "{r}" →{sentiment}')
